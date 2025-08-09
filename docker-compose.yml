@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  chatbot-saas:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-key-12345}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=mistral
+      - OLLAMA_TIMEOUT=30
+      - OLLAMA_MAX_TOKENS=2048
+      - OLLAMA_TEMPERATURE=0.7
+      - CHROMA_DB_PATH=/app/data/chroma
+      - DATA_DIR=/app/data
+      - TEMP_DIR=/app/tmp
+      - STATIC_DIR=/app/static
+      - CORS_ORIGINS=*
+    volumes:
+      - ./data:/app/data
+      - ./tmp:/app/tmp
+      - ./static:/app/static
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    networks:
+      - chatbot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - chatbot-network
+    deploy:
+      resources:
+        reservations:
+          memory: 4G
+        limits:
+          memory: 8G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  chatbot-network:
+    driver: bridge
+
+volumes:
+  ollama_data:
+    driver: local

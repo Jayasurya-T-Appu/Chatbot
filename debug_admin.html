@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Debug</title>
+</head>
+<body>
+    <h1>Admin Debug Page</h1>
+    
+    <div>
+        <h2>Step 1: Test Authentication</h2>
+        <button onclick="testAuth()">Test Admin Auth</button>
+        <div id="auth-result"></div>
+    </div>
+    
+    <div>
+        <h2>Step 2: Test Dashboard Data</h2>
+        <button onclick="testDashboard()">Test Dashboard Data</button>
+        <div id="dashboard-result"></div>
+    </div>
+    
+    <div>
+        <h2>Step 3: Test Clients</h2>
+        <button onclick="testClients()">Test Clients</button>
+        <div id="clients-result"></div>
+    </div>
+    
+    <div>
+        <h2>LocalStorage</h2>
+        <button onclick="checkLocalStorage()">Check LocalStorage</button>
+        <div id="localstorage-result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        const ADMIN_API_KEY = 'admin-secret-key-12345';
+        
+        async function testAuth() {
+            const resultDiv = document.getElementById('auth-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/auth`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${ADMIN_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <p>Status: ${response.status}</p>
+                    <p>Response: ${JSON.stringify(data, null, 2)}</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testDashboard() {
+            const resultDiv = document.getElementById('dashboard-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
+                    headers: {
+                        'Authorization': `Bearer ${ADMIN_API_KEY}`
+                    }
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <p>Status: ${response.status}</p>
+                    <p>Response: ${JSON.stringify(data, null, 2)}</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testClients() {
+            const resultDiv = document.getElementById('clients-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/clients`, {
+                    headers: {
+                        'Authorization': `Bearer ${ADMIN_API_KEY}`
+                    }
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <p>Status: ${response.status}</p>
+                    <p>Response: ${JSON.stringify(data, null, 2)}</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        function checkLocalStorage() {
+            const resultDiv = document.getElementById('localstorage-result');
+            const storedKey = localStorage.getItem('admin_api_key');
+            resultDiv.innerHTML = `
+                <p>Stored admin key: ${storedKey || 'None'}</p>
+                <p>Expected key: ${ADMIN_API_KEY}</p>
+                <p>Match: ${storedKey === ADMIN_API_KEY ? 'Yes' : 'No'}</p>
+            `;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - ChatBot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            width: 100%;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .security-note {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 12px;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">🤖</div>
+        <h1>Admin Login</h1>
+        
+        <div id="error-message" class="error"></div>
+        <div id="success-message" class="success"></div>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label for="admin-key">Admin API Key</label>
+                <input 
+                    type="password" 
+                    id="admin-key" 
+                    placeholder="Enter your admin API key"
+                    required
+                    autocomplete="off"
+                >
+            </div>
+            
+            <button type="submit" class="btn" id="login-btn">
+                Login to Dashboard
+            </button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Verifying credentials...</p>
+        </div>
+        
+        <div class="security-note">
+            <strong>Security Note:</strong> This is a protected admin area. 
+            Only authorized administrators should access this dashboard.
+        </div>
+        
+        <div class="footer">
+            <p>ChatBot Admin Panel</p>
+            <p>Keep your API key secure</p>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        // Check if already logged in
+        const storedKey = localStorage.getItem('admin_api_key');
+        if (storedKey) {
+            // Verify the stored key is still valid
+            verifyAdminKey(storedKey).catch(() => {
+                // If stored key is invalid, clear it
+                localStorage.removeItem('admin_api_key');
+            });
+        }
+        
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const adminKey = document.getElementById('admin-key').value.trim();
+            if (!adminKey) {
+                showError('Please enter your admin API key');
+                return;
+            }
+            
+            // Show loading
+            setLoading(true);
+            
+            try {
+                await verifyAdminKey(adminKey);
+            } catch (error) {
+                showError('Invalid admin API key. Please try again.');
+                setLoading(false);
+            }
+        });
+        
+        async function verifyAdminKey(adminKey) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/auth`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                
+                if (result.success) {
+                    // Store the key securely
+                    localStorage.setItem('admin_api_key', adminKey);
+                    console.log('Stored admin key in localStorage:', adminKey);
+                    
+                    // Show success message
+                    showSuccess('Authentication successful! Redirecting...');
+                    
+                    // Redirect to dashboard after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/admin-dashboard';
+                    }, 1000);
+                } else {
+                    throw new Error(result.message || 'Authentication failed');
+                }
+                
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Hide success message if shown
+            document.getElementById('success-message').style.display = 'none';
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            
+            // Hide error message if shown
+            document.getElementById('error-message').style.display = 'none';
+        }
+        
+        function setLoading(loading) {
+            const loginBtn = document.getElementById('login-btn');
+            const loadingDiv = document.getElementById('loading');
+            const form = document.getElementById('login-form');
+            
+            if (loading) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Logging in...';
+                loadingDiv.style.display = 'block';
+                form.style.display = 'none';
+            } else {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login to Dashboard';
+                loadingDiv.style.display = 'none';
+                form.style.display = 'block';
+            }
+        }
+        
+        // Clear error on input
+        document.getElementById('admin-key').addEventListener('input', () => {
+            document.getElementById('error-message').style.display = 'none';
+        });
+        
+        // Security: Clear stored key on page unload (optional)
+        window.addEventListener('beforeunload', () => {
+            // Uncomment the line below if you want to clear the key on page refresh
+            // localStorage.removeItem('admin_api_key');
+        });
+    </script>
+</body>
+</html>
